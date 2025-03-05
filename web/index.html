@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Distributed Calculator</title>
+</head>
+<body>
+    <h1>Distributed Calculator</h1>
+    <form id="expressionForm">
+        <label for="expression">Enter expression:</label>
+        <input type="text" id="expression" name="expression" required>
+        <button type="submit">Calculate</button>
+    </form>
+    <h2>Results</h2>
+    <ul id="results"></ul>
+
+    <script>
+        document.getElementById('expressionForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const expression = document.getElementById('expression').value;
+
+            const response = await fetch('http://localhost:8080/api/v1/calculate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ expression }),
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                alert(`Expression ID: ${data.id}`);
+            } else {
+                alert('Error submitting expression');
+            }
+        });
+
+        async function fetchResults() {
+            const response = await fetch('http://localhost:8080/api/v1/expressions');
+            if (response.ok) {
+                const data = await response.json();
+                const resultsList = document.getElementById('results');
+                resultsList.innerHTML = '';
+                data.expressions.forEach(expr => {
+                    const li = document.createElement('li');
+                    li.textContent = `ID: ${expr.id}, Expression: ${expr.expr}, Status: ${expr.status}, Result: ${expr.result}`;
+                    resultsList.appendChild(li);
+                });
+            }
+        }
+
+        setInterval(fetchResults, 5000);
+    </script>
+</body>
+</html>
