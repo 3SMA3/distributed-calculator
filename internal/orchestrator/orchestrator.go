@@ -6,12 +6,14 @@ import (
 	"net/http"
 	"sync"
 	"time"
+
+	"github.com/gorilla/mux"
 )
 
 type Expression struct {
 	ID     string  `json:"id"`
 	Expr   string  `json:"expression"`
-	Status string  `json:"status"` 
+	Status string  `json:"status"`
 	Result float64 `json:"result"`
 }
 
@@ -39,6 +41,7 @@ func HandleCalculate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	id := fmt.Sprintf("%d", time.Now().UnixNano())
+
 	mutex.Lock()
 	expressions[id] = Expression{
 		ID:     id,
@@ -65,7 +68,8 @@ func HandleGetExpressions(w http.ResponseWriter, r *http.Request) {
 }
 
 func HandleGetExpressionByID(w http.ResponseWriter, r *http.Request) {
-	id := r.URL.Path[len("/api/v1/expressions/"):]
+	id := mux.Vars(r)["id"]
+
 	mutex.Lock()
 	expr, exists := expressions[id]
 	mutex.Unlock()
