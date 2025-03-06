@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 )
@@ -28,7 +29,7 @@ func Worker(wg *sync.WaitGroup) {
 			continue
 		}
 
-		result, err := compute(task)
+		result, err := Compute(task)
 		if err != nil {
 			fmt.Println("Error computing task:", err)
 		}
@@ -57,7 +58,7 @@ func fetchTask() (*Task, error) {
 	return &response.Task, nil
 }
 
-func compute(task *Task) (float64, error) {
+func Compute(task Task) (float64, error) {
 	time.Sleep(time.Duration(task.OperationTime) * time.Millisecond)
 
 	switch task.Operation {
