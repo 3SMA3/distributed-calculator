@@ -58,24 +58,24 @@ func fetchTask() (*Task, error) {
 	return &response.Task, nil
 }
 
-func Compute(task Task) (float64, error) {
-	time.Sleep(time.Duration(task.OperationTime) * time.Millisecond)
+func Compute(task *Task) (float64, error) {
+    time.Sleep(time.Duration(task.OperationTime) * time.Millisecond)
 
-	switch task.Operation {
-	case "+":
-		return task.Arg1 + task.Arg2, nil
-	case "-":
-		return task.Arg1 - task.Arg2, nil
-	case "*":
-		return task.Arg1 * task.Arg2, nil
-	case "/":
-		if task.Arg2 == 0 {
-			return 0, fmt.Errorf("division by zero")
-		}
-		return task.Arg1 / task.Arg2, nil
-	default:
-		return 0, fmt.Errorf("unknown operation")
-	}
+    switch task.Operation {
+    case "+":
+        return task.Arg1 + task.Arg2, nil
+    case "-":
+        return task.Arg1 - task.Arg2, nil
+    case "*":
+        return task.Arg1 * task.Arg2, nil
+    case "/":
+        if task.Arg2 == 0 {
+            return 0, fmt.Errorf("division by zero")
+        }
+        return task.Arg1 / task.Arg2, nil
+    default:
+        return 0, fmt.Errorf("unknown operation")
+    }
 }
 
 func sendResult(taskID string, result float64, err error) {
