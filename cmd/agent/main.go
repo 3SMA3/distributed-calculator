@@ -1,8 +1,9 @@
 package main
 
 import (
-	"distributed-calculator/internal/agent"
 	"sync"
+
+	"github.com/3SMA3/distributed-calculator/internal/agent"
 )
 
 func main() {
@@ -14,5 +15,5 @@ func main() {
 		go agent.Worker(&wg)
 	}
 
-	wg.Wait() 
+	wg.Wait()
 }
