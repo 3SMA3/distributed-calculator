@@ -9,6 +9,8 @@
 - **`internal/`**
   - **`orchestrator/`**
     - **`orchestrator.go`**
+    - **`parser/`**
+      - **`parser.go`**
   - **`agent/`**
     - **`agent.go`**
     - **`agent_test.go`**
@@ -20,45 +22,34 @@
 ## Запуск проекта
 1. **Установите Go версии 1.23.2**:
    Ссылка для этого: [Go Download](https://go.dev/doc/install)
-3. **Клонируйте репозиторий**:
+2. **Клонируйте репозиторий**:
    ```
    git clone https://github.com/3SMA3/distributed-calculator.git
    ```
-4. **Перейдите в папку с проектом**:
+3. **Перейдите в папку с проектом**:
    ```
    cd distributed-calculator
    ```
-5. **Установите зависимости**:
+4. **Установите зависимости**:
    ```
    go mod tidy
    ```
-6. **Запустите оркестратор**:
+5. **Запустите оркестратор**:
    ```
    go run ./cmd/orchestrator/main.go
    ```
-7. **Запустите агентов**:
-   Откройте новый терминал и выполните:
+   Оркестратор запустится на порту 8080
+6. **Запустите агентов**:
+
+   **Откройте новый терминал и выполните:**
    ```
    go run ./cmd/agent/main.go
    ```
 8. **Откройте веб-интерфейс**:
-   Перейдите по адресу `http://localhost:8080` в браузере.
-## Примеры использования
-### Добавление выражения
+
+Перейдите по адресу `http://localhost:8080` в браузере.
 ```
-curl --location 'localhost:8080/api/v1/calculate' \
---header 'Content-Type: application/json' \
---data '{
-  "expression": "2+2*2"
-}'
-```
-### Получение списка выражений
-```
-curl --location 'localhost:8080/api/v1/expressions'
-```
-### Получение выражения по ID
-```
-curl --location 'localhost:8080/api/v1/expressions/:id'
+http://localhost:8080
 ```
 ## Тесты
 В проекте реализованы unit-тесты для пакета `agent`, которые проверяют корректность вычислений и обработки задач. Тесты находятся в файле `internal/agent/agent_test.go`.
@@ -71,51 +62,61 @@ go test ./internal/agent/...
 Тесты покрывают следующие сценарии:
 1. **Арифметические операции**:
    - Сложение (`+`).
-   - Вычитание (`-`).
+   - Вычитание (`-`)(его нет в тестах, но оно работает).
    - Умножение (`*`).
    - Деление (`/`).
-   - Обработка деления на ноль.
-   - Обработка неизвестной операции.
-2. **Время выполнения операций**:
-   - Проверка, что операции выполняются за указанное время.
-3. **Корректность результатов**:
-   - Проверка, что результаты вычислений соответствуют ожидаемым.
+2. **Приоритет операций**:
+   - Умножение выполняется перед сложением.
+3. **Выражения со скобками**:
+   - Корректное вычисление выражений с учётом скобок.
+4. **Обработка ошибок**:
+   - Деление на ноль.
+   - Некорректные выражения.
 ### Примеры тестов
-- **Сложение**:
+- **Простое сложение**:
 ```
-task := agent.Task{
-    Arg1:          2.5,
-    Arg2:          3.5,
-    Operation:     "+",
-    OperationTime: 100,
-}
-result, err := agent.Compute(task)
-assert.NoError(t, err)
-assert.Equal(t, 6.0, result)
+t.Run("Simple addition", func(t *testing.T) {
+    result, err := agent.ComputeExpression("2+2")
+    assert.NoError(t, err)
+    assert.Equal(t, 4.0, result)
+})
+```
+- **Умножение перед сложением**:
+```
+t.Run("Multiplication before addition", func(t *testing.T) {
+    result, err := agent.ComputeExpression("2+2*2")
+    assert.NoError(t, err)
+    assert.Equal(t, 6.0, result)
+})
+```
+- **Выражение со скобками**:
+```
+t.Run("With parentheses", func(t *testing.T) {
+    result, err := agent.ComputeExpression("(2+3)*4")
+    assert.NoError(t, err)
+    assert.Equal(t, 20.0, result)
+})
+```
+- **Деление**:
+```
+t.Run("Division", func(t *testing.T) {
+    result, err := agent.ComputeExpression("10/(2+3)")
+    assert.NoError(t, err)
+    assert.Equal(t, 2.0, result)
+})
 ```
 - **Деление на ноль**:
 ```
-task := agent.Task{
-    Arg1:          10.0,
-    Arg2:          0.0,
-    Operation:     "/",
-    OperationTime: 100,
-}
-result, err := agent.Compute(task)
-assert.Error(t, err)
-assert.Equal(t, "division by zero", err.Error())
-assert.Equal(t, 0.0, result)
+t.Run("Division by zero", func(t *testing.T) {
+    _, err := agent.ComputeExpression("10/0")
+    assert.Error(t, err)
+    assert.Equal(t, "division by zero", err.Error())
+})
 ```
-- **Неизвестная операция**:
+- **Некорректное выражение**:
 ```
-task := agent.Task{
-    Arg1:          10.0,
-    Arg2:          5.0,
-    Operation:     "%",
-    OperationTime: 100,
-}
-result, err := agent.Compute(task)
-assert.Error(t, err)
-assert.Equal(t, "unknown operation", err.Error())
-assert.Equal(t, 0.0, result)
+t.Run("Invalid expression", func(t *testing.T) {
+    _, err := agent.ComputeExpression("2+*3")
+    assert.Error(t, err)
+})
 ```
