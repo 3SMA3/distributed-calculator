@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/3SMA3/distributed-calculator/internal/agent"
 	"github.com/gorilla/mux"
 )
 
@@ -50,6 +51,20 @@ func HandleCalculate(w http.ResponseWriter, r *http.Request) {
 		Result: 0,
 	}
 	mutex.Unlock()
+
+	go func() {
+		result, err := agent.ComputeExpression(req.Expression)
+		mutex.Lock()
+		expr := expressions[id]
+		if err != nil {
+			expr.Status = "error"
+		} else {
+			expr.Status = "done"
+			expr.Result = result
+		}
+		expressions[id] = expr
+		mutex.Unlock()
+	}()
 
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(map[string]string{"id": id})
@@ -99,6 +114,7 @@ func HandleTask(w http.ResponseWriter, r *http.Request) {
 		var req struct {
 			ID     string  `json:"id"`
 			Result float64 `json:"result"`
+			Error  string  `json:"error,omitempty"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			http.Error(w, "Invalid request body", http.StatusUnprocessableEntity)
@@ -112,6 +128,16 @@ func HandleTask(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Task not found", http.StatusNotFound)
 			return
 		}
+
+		if req.Error != "" {
+			expr.Status = "error"
+			expr.Result = 0
+			expressions[req.ID] = expr
+			mutex.Unlock()
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
 		expr.Result = req.Result
 		expr.Status = "done"
 		expressions[req.ID] = expr
@@ -120,5 +146,25 @@ func HandleTask(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	default:
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	}
+}
+
+func Compute(task *Task) (float64, error) {
+	time.Sleep(time.Duration(task.OperationTime) * time.Millisecond)
+
+	switch task.Operation {
+	case "+":
+		return task.Arg1 + task.Arg2, nil
+	case "-":
+		return task.Arg1 - task.Arg2, nil
+	case "*":
+		return task.Arg1 * task.Arg2, nil
+	case "/":
+		if task.Arg2 == 0 {
+			return 0, fmt.Errorf("division by zero")
+		}
+		return task.Arg1 / task.Arg2, nil
+	default:
+		return 0, fmt.Errorf("unknown operation")
 	}
 }
