@@ -44,7 +44,7 @@
                 resultsList.innerHTML = '';
                 data.expressions.forEach(expr => {
                     const li = document.createElement('li');
-                    li.textContent = `ID: ${expr.id}, Expression: ${expr.expr}, Status: ${expr.status}, Result: ${expr.result}`;
+                    li.textContent = `ID: ${expr.id}, Expression: ${expr.expression}, Status: ${expr.status}, Result: ${expr.result}`;
                     resultsList.appendChild(li);
                 });
             }
